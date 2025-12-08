@@ -1,0 +1,582 @@
+{
+  "name": "UGC Ecommerence Video Generator From Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        768,
+        440
+      ],
+      "id": "779cbe49-98e1-491f-8010-dd662aeb6cde",
+      "name": "Telegram Trigger",
+      "webhookId": "cf5ab4d1-7f2d-4746-8001-a80ea1147775",
+      "credentials": {
+        "telegramApi": {
+          "id": "Xhwq2BpZp1qzMheS",
+          "name": "Telegram account - me"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bot-id-assign",
+              "name": "bot_id",
+              "value": "8315396710:AAErm-_WQ40QWswKTKVFc5npjW9EWu1h5kU",
+              "type": "string"
+            },
+            {
+              "id": "chat-id-assign",
+              "name": "chat_id",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        992,
+        440
+      ],
+      "id": "4f3dc635-7d39-4713-b60b-f9cab9d515ee",
+      "name": "Set Bot & Chat IDs"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.telegram.org/bot{{ $json['bot_id'] }}/getFile?file_id={{ $('Telegram Trigger').item.json.message.photo[0].file_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1216,
+        440
+      ],
+      "id": "107de735-26a1-4197-969c-65e8e649f23a",
+      "name": "Get File Path from Telegram"
+    },
+    {
+      "parameters": {
+        "jsCode": "const filePath = $input.first().json.result.file_path;\nconst botId = $('Set Bot & Chat IDs').first().json.bot_id;\nconst imageUrl = `https://api.telegram.org/file/bot${botId}/${filePath}`;\n\nreturn {\n  image_url: imageUrl,\n  file_path: filePath\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        440
+      ],
+      "id": "ec507cd4-cdf4-4dd4-8cbe-961f9367d83b",
+      "name": "Build Image URL"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "=Analyze this product image. Extract:\n1. Product name\n2. Category\n3. Key features (list)\n4. Design description\n5. Target audience\n6. Use cases (list)\n7. Unique selling points (list)\n\nRespond ONLY as JSON:\n{\n  \"product_name\": \"\",\n  \"category\": \"\",\n  \"key_features\": [],\n  \"design_description\": \"\",\n  \"target_audience\": \"\",\n  \"use_cases\": [],\n  \"unique_selling_points\": []\n}",
+        "imageUrls": "={{ $json.image_url }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1664,
+        440
+      ],
+      "id": "47a2ec4f-b3ae-489a-9d23-5ded314c8a23",
+      "name": "Analyze Image with Vision",
+      "credentials": {
+        "openAiApi": {
+          "id": "vV2c4FZEiItB5xnR",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $('Analyze Image with Vision').first().json['0'].content[0].text;\n\nconst extract = (key) => {\n  const match = text.match(new RegExp(`\\\"${key}\\\":\\\\s*\\\"([^\\\"]*)`));\n  return match ? match[1] : '';\n};\n\nconst extractArray = (key) => {\n  const match = text.match(new RegExp(`\\\"${key}\\\":\\\\s*\\\\[([^\\\\]]*)`, 's'));\n  return match ? match[1].split(',').map(x => x.replace(/\"/g, '').trim()).filter(x => x) : [];\n};\n\nreturn {\n  product_name: extract('product_name'),\n  category: extract('category'),\n  key_features: extractArray('key_features'),\n  design_description: extract('design_description'),\n  target_audience: extract('target_audience'),\n  use_cases: extractArray('use_cases'),\n  unique_selling_points: extractArray('unique_selling_points')\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        440
+      ],
+      "id": "e221c079-8f36-4b4e-b74a-27979646d838",
+      "name": "Format Analysis"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2336,
+        664
+      ],
+      "id": "a6fdd4ef-ec6c-4a3d-b6c5-f6e216a40fd4",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "vV2c4FZEiItB5xnR",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "typeVersion": 1.1,
+      "position": [
+        2464,
+        664
+      ],
+      "id": "8bb016ae-9c92-47d0-88fb-a50c70abccd9",
+      "name": "Think1"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"scenes\": [\n    {\n      \"video_prompt\": \"Show product, character talking naturally...\",\n      \"aspect_ratio\": \"9:16\"\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2592,
+        664
+      ],
+      "id": "b329be3d-076e-4666-899a-f7b5d6d752ee",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create accurate 30-second UGC video script.\n\nProduct: {{ $json.product_name }}\nCategory: {{ $json.category }}\nFeatures: {{ $json.key_features }}\nDesign: {{ $json.design_description }}\n\nUser Context/Caption: {{ $('Telegram Trigger').item.json.message.caption }}\n\nCRITICAL:\n- Keep product EXACTLY as shown in reference image\n- Do NOT change colors, design, patterns, or details\n- Product must look 100% IDENTICAL to reference\n- Model wears product throughout\n- Background matches caption context (Diwali, office, casual, wedding, party, beach, etc.)\n- Dialogue only in single quotes ('), ZERO double quotes\n\nGenerate complete 30-second video prompt with exact product details, model appearance, background context, all on SINGLE LINE with NO newlines.\n\nOutput ONLY valid JSON:\n{\n  \"scenes\": [{\n    \"video_prompt\": \"[Complete prompt here - SINGLE LINE - all text on one line only, NO newlines or line breaks]\",\n    \"aspect_ratio\": \"9:16\"\n  }]\n}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=Create accurate 30-second UGC video script.\n\nProduct:{{ $json.product_name }}\nCategory: {{ $json.category }}\nFeatures: {{ $json.key_features }}\nDesign: {{ $json.design_description }}\n\nUser Context/Caption: {{ $('Telegram Trigger').item.json.message.caption }}\n\nCRITICAL:\n- Keep product EXACTLY as shown in reference image\n- Do NOT change colors, design, patterns, or details\n- Product must look 100% IDENTICAL to reference\n- Model wears product throughout\n- Background matches caption context (Diwali, office, casual, wedding, party, beach, etc.)\n- Dialogue only in single quotes ('), ZERO double quotes\n\nGenerate complete 30-second video prompt with exact product details, model appearance, background context, all on SINGLE LINE with NO newlines.\n\nOutput ONLY valid JSON:\n{\n  \"scenes\": [{\n    \"video_prompt\": \"[Complete prompt here - SINGLE LINE - all text on one line only, NO newlines or line breaks]\",\n    \"aspect_ratio\": \"9:16\"\n  }]\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        2392,
+        440
+      ],
+      "id": "5e1914ad-9fc6-4779-8aad-b51e72952659",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.kie.ai/api/v1/veo/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{ $json.output.scenes[0].video_prompt }}\",\n  \"imageUrls\": [\n    \"{{ $('Build Image URL').first().json.image_url }}\",\n    \"{{ $('Build Image URL').first().json.image_url }}\"\n  ],\n  \"model\": \"veo3_fast\",\n  \"watermark\": \"MDFAshion\",\n  \"aspectRatio\": \"9:16\",\n  \"enableFallback\": false,\n  \"enableTranslation\": true,\n  \"generationType\": \"FIRST_AND_LAST_FRAMES_2_VIDEO\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2800,
+        440
+      ],
+      "id": "22f53618-37bf-453f-8af9-06a938442e00",
+      "name": "Create Video - Veo 3.1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "boUs8K76tbJkg7N7",
+          "name": "Kie AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 200
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3024,
+        440
+      ],
+      "id": "546a977d-d1ef-4027-afda-abbc81d88d72",
+      "name": "Wait",
+      "webhookId": "f3a1e119-86a6-4ae0-93fc-daa26172fb6d"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/api/v1/veo/record-info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "taskId",
+              "value": "={{ $json.data.taskId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3248,
+        368
+      ],
+      "id": "9d143d28-1df7-4d3e-bcce-8a49a406aaef",
+      "name": "Get Video",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "boUs8K76tbJkg7N7",
+          "name": "Kie AI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendVideo",
+        "chatId": "={{ $('Set Bot & Chat IDs').item.json.chat_id }}",
+        "file": "={{ $('Get Video').item.json.data.response.resultUrls[0] }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3696,
+        440
+      ],
+      "id": "dd3b9985-354f-4fd8-8fc1-4d2e277e3b81",
+      "name": "Send a video",
+      "webhookId": "345a1a55-692e-464b-ba1d-077dfbe93739",
+      "credentials": {
+        "telegramApi": {
+          "id": "Xhwq2BpZp1qzMheS",
+          "name": "Telegram account - me"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Set Bot & Chat IDs').item.json.chat_id }}",
+        "text": "All set! I’ve started the process.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1888,
+        440
+      ],
+      "id": "6b1b81d6-7e1b-433e-928d-5ebde71334da",
+      "name": "Notify User – Video Progress Started",
+      "webhookId": "a677cd34-c54f-4f6e-b8e4-fd0b164a0ade",
+      "credentials": {
+        "telegramApi": {
+          "id": "Xhwq2BpZp1qzMheS",
+          "name": "Telegram account - me"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3920,
+        440
+      ],
+      "id": "10d0a557-8edc-4aa5-a933-5d61df33aef5",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "content": "# UGC Video Generator from Telegram\n\n**Title:** Automated UGC Video Creation Workflow\n\n**Description:** Convert product images from Telegram into professional 8-second UGC videos with AI analysis and video generation.\n\n**Use Case:** E-commerce businesses creating social media content automatically from product photos.\n",
+        "height": 304,
+        "width": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -16
+      ],
+      "id": "8c938a5b-8e90-4354-bca1-d7ca8ee08a88",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Nodes\n\n1. **Telegram Trigger** - Listens for incoming product images from Telegram\n2. **Set Bot & Chat IDs** - Extracts bot and chat IDs from the message\n3. **Get File Path from Telegram** - Retrieves the file path of the uploaded image\n4. **Build Image URL** - Constructs the downloadable URL for the image\n5. **Analyze Image with Vision** - Uses GPT-4O to extract product details from the image\n6. **Notify User – Video Progress Started** - Sends confirmation message to user\n7. **Format Analysis** - Parses and cleans the extracted product data\n8. **OpenAI Chat Model1** - LLM engine for script generation\n9. **Think1** - Breaks down the script generation task\n10. **Structured Output Parser** - Defines expected JSON output format\n11. **AI Agent** - Generates detailed 8-second UGC video script\n12. **Create Video - Veo 3.1** - Submits prompt to Veo API for video generation\n13. **Wait** - Pauses 100 seconds for video processing\n14. **If** - Checks if video creation succeeded\n15. **Get Video** - Retrieves completed video from API\n16. **If1** - Verifies video retrieval success\n17. **Send a video** - Delivers video to user via Telegram\n18. **No Operation, do nothing** - Marks workflow completion",
+        "height": 656,
+        "width": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        336
+      ],
+      "id": "a9bee6e5-ecbc-41ab-991a-7075e716e1cd",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6ef95ed5-ac25-4e0f-9fe5-83ea61e57cd5",
+              "leftValue": "={{ $json.data.successFlag }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3472,
+        440
+      ],
+      "id": "108a417c-872a-4e02-9bf8-cd2b063bcbd3",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Bot & Chat IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Bot & Chat IDs": {
+      "main": [
+        [
+          {
+            "node": "Get File Path from Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File Path from Telegram": {
+      "main": [
+        [
+          {
+            "node": "Build Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Image URL": {
+      "main": [
+        [
+          {
+            "node": "Analyze Image with Vision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Image with Vision": {
+      "main": [
+        [
+          {
+            "node": "Notify User – Video Progress Started",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Analysis": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Think1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Create Video - Veo 3.1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Video - Veo 3.1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Video": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify User – Video Progress Started": {
+      "main": [
+        [
+          {
+            "node": "Format Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a video": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "37835e57-b1bd-4ca8-87d0-752269892fab",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6f1625073e00a9d10fbdf0ad8be4ebd48cece80c66cf9acc9b41769c0461c4a0"
+  },
+  "id": "MddSlxj7WQQsQGiz",
+  "tags": []
+}
