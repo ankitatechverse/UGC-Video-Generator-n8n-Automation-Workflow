@@ -28,62 +28,87 @@ Done. Automated. ✨
 
 ## 🧩 **Node-by-Node Breakdown (Simple & Clear)**
 
-### **1️⃣ Telegram Trigger**
+> ### **1) Telegram Trigger**
+>
+> Starts the workflow when a user sends a message or photo to your Telegram bot.
 
-Starts the workflow the moment a user sends an image or message.
+---
 
-### **2️⃣ Set – Bot & Chat IDs**
+> ### **2) Set – Bot & Chat IDs**
+>
+> Stores the bot token and the user’s chat ID so later steps can reply correctly.
 
-Stores the bot token and user chat ID so Telegram replies go to the correct person.
+---
 
-### **3️⃣ Get File Path from Telegram**
+> ### **3) Get File Path from Telegram**
+>
+> Uses the image’s `file_id` to retrieve the actual `file_path` from Telegram.
 
-Uses Telegram’s API to convert `file_id` into the actual `file_path`.
+---
 
-### **4️⃣ Build Image URL**
+> ### **4) Build Image URL**
+>
+> Converts the Telegram `file_path` into a public image URL for AI processing.
 
-Turns the Telegram `file_path` into a public image URL for analysis.
+---
 
-### **5️⃣ Analyze Image with Vision (OpenAI)**
+> ### **5) Analyze Image with Vision (OpenAI)**
+>
+> Extracts product details such as name, category, features, and design information.
 
-Extracts structured product information (name, category, features, design details, etc.).
+---
 
-### **6️⃣ Format Analysis**
+> ### **6) Format Analysis**
+>
+> Cleans the data returned by Vision and structures it properly for the script generator.
 
-Cleans the extracted data and prepares it for the script generator.
+---
 
-### **7️⃣ Notify User — Video Progress Started**
+> ### **7) Notify User — Video Progress Started**
+>
+> Sends a message letting the user know that video creation has started.
 
-Notifies the user that video creation has begun. 📩
+---
 
-### **8️⃣ AI Agent — Build UGC Video Prompt**
+> ### **8) AI Agent — Build UGC Video Prompt**
+>
+> Generates a one-line UGC video script using the product data and user caption.
 
-Creates a **one-line**, clean UGC script based on product details + caption.
+---
 
-### **9️⃣ Create Video (KIE AI)**
+> ### **9) Create Video (KIE AI)**
+>
+> Sends the script and reference image to KIE AI to generate the UGC video and returns a task ID.
 
-Sends the script + image to KIE AI, which begins generating the video.
+---
 
-### **🔟 Wait**
+> ### **10) Wait**
+>
+> Pauses briefly before checking whether the video has been generated.
 
-Pauses before checking the video generation status.
+---
 
-### **1️⃣1️⃣ Get Video Status (record-info)**
+> ### **11) Get Video Status (record-info)**
+>
+> Checks KIE AI to see whether the video is finished and ready to be sent.
 
-Checks if KIE AI has finished producing the video.
+---
 
-### **1️⃣2️⃣ If — successFlag Check**
+> ### **12) If — successFlag Check**
+>
+> Determines whether the video is ready. If not ready, waits and checks again.
 
-If the video is ready → proceed
-If not → wait and check again 🔄
+---
 
-### **1️⃣3️⃣ Send Video — Telegram**
+> ### **13) Send Video — Telegram**
+>
+> Sends the completed UGC video back to the same chat where the user uploaded the image.
 
-Sends the finished UGC video straight back to the user. 🎬
+---
 
-### **1️⃣4️⃣ NoOp — End**
-
-Marks the end of the workflow.
+> ### **14) NoOp — End**
+>
+> Ends the workflow.
 
 ---
 
