@@ -1,6 +1,6 @@
 # ⭐ **UGC Video Generator — n8n Automation Workflow**
 
-Automatically turn a single Telegram product photo into a **30-second vertical UGC video** using
+Automatically turn a single Telegram product photo into a **8-second vertical UGC video** using
 **OpenAI Vision**, **AI Script Generation**, and **KIE AI Video Generation** — all sent back to the user inside Telegram.
 No editing. No manual steps. Fully automated. 🚀
 
@@ -20,7 +20,7 @@ No editing. No manual steps. Fully automated. 🚀
 
 1. User sends a **product image + caption** to your Telegram bot.
 2. Bot instantly replies: *“Creating your UGC video…”*
-3. After processing, the bot sends back a **finished 30-second UGC video (MP4)**.
+3. After processing, the bot sends back a **finished 8-second UGC video (MP4)**.
 
 Done. Automated. ✨
 
